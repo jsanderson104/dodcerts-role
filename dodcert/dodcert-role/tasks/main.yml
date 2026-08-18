@@ -1,0 +1,6 @@
+---
+# tasks file for dodcert-role
+#
+- name: Import tasks
+  ansible.builtin.import_tasks:
+    file: certs.yml

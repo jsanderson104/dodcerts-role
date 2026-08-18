@@ -1,0 +1,96 @@
+---
+- name: Make tmp working directory
+  ansible.builtin.file:
+    path: "{{cert_workingdir_intermediates}}"
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+
+- name: Make Bundles working directory
+  ansible.builtin.file:
+    path: "{{cert_workingdir_combined}}"
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+
+
+- name: Download and extract DOD Root CA zip file
+  ansible.builtin.unarchive:
+    src: https://dl.dod.cyber.mil/wp-content/uploads/pki-pke/zip/unclass-certificates_pkcs7_DoD.zip
+    dest: /tmp/dodcerts
+    remote_src: true
+    owner: root
+    group: root
+    mode: 0755
+
+- name: Find ROOT CA p7b files and put them in a list
+  register: rootcafiles
+  ansible.builtin.find:
+     paths: "{{cert_workingdir_base}}"
+     recurse: true
+     patterns: 'Certificates_PKCS7_v5_14_DoD_DoD_Root_CA_*.der.p7b'
+
+
+- name: Copy Shell script template to host
+  ansible.builtin.template:
+     src: extract.bash
+     dest: "{{cert_workingdir_base}}"
+     owner: root
+     group: root
+     mode: 0755
+
+
+- name: SHELL | Extract Intermediate Certs from Root CA files found.
+  loop: "{{rootcafiles.files}}"
+  ansible.builtin.shell: "bash {{cert_workingdir_base}}/extract.bash {{item.path}}"
+
+
+- name: Find extracted intermediate cert files and put them in a list
+  register: intermediate_files
+  ansible.builtin.find:
+     paths: "{{cert_workingdir_base}}"
+     recurse: false
+     patterns: 'Certificates_PKCS7_v5_14_DoD_DoD_Root_CA_*.der*.crt'
+
+- name: Copy Shell script template to host
+  ansible.builtin.template:
+     src: rename.bash
+     dest: "{{cert_workingdir_base}}"
+     owner: root
+     group: root
+     mode: 0755
+
+- name: SHELL | Rename extracted Intermediate Certs to match their SSL Subject attribute
+  loop: "{{intermediate_files.files}}"
+  ansible.builtin.shell: "bash {{cert_workingdir_base}}/rename.bash {{item.path}}"
+
+
+- name: Copy Certutil import script for /etc/ipa/nssdb to host
+  ansible.builtin.copy:
+    src: update_etcipa_nssdb.bash
+    dest: "{{cert_workingdir_intermediates}}"
+
+- name: Find renamed intermediate cert files and put them in a list
+  register: renamed_intermediate_files
+  ansible.builtin.find:
+     paths: "{{cert_workingdir_intermediates}}"
+     recurse: false
+     patterns: '*.crt'
+
+
+- name: Update /etc/ipa/nssdb with Certs
+  loop: "{{renamed_intermediate_files.files}}"
+  ansible.builtin.shell: "bash {{cert_workingdir_intermediates}}/update_etcipa_nssdb.bash /etc/ipa/nssdb {{item.path}}"
+  register: import_cmd
+
+- name: Copy Certutil import script for /etc/pki/nssdb to host
+  ansible.builtin.copy:
+    src: update_etcpki_nssdb.bash
+    dest: "{{cert_workingdir_intermediates}}"
+
+- name: Update /etc/pki/nssdb with Certs
+  loop: "{{renamed_intermediate_files.files}}"
+  ansible.builtin.shell: "bash {{cert_workingdir_intermediates}}/update_etcpki_nssdb.bash /etc/pki/nssdb {{item.path}}"
+  register: import_cmd

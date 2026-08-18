@@ -1,0 +1,7 @@
+---
+# defaults file for dodcert-role
+#
+
+cert_workingdir_base: /tmp/dodcerts
+cert_workingdir_intermediates:  "{{cert_workingdir_base}}/intermediates"
+cert_workingdir_combined:  "{{cert_workingdir_base}}/combined"

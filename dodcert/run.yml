@@ -1,0 +1,6 @@
+- name: Invole Dodcerts role
+  hosts: localhost
+  become: true
+  gather_facts: false
+  roles:
+    - dodcert-role 
