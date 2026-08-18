@@ -1,2 +1,22 @@
 ---
-- name: 
+
+# Update DOD certs in NSSDB located at /etc/ipa/nssdb
+
+- name: Copy Certutil import script for /etc/ipa/nssdb to host
+  ansible.builtin.copy:
+    src: update_etcipa_nssdb.bash
+    dest: "{{cert_workingdir_intermediates}}"
+
+- name: Find renamed intermediate cert files and put them in a list
+  register: renamed_intermediate_files
+  ansible.builtin.find:
+     paths: "{{cert_workingdir_intermediates}}"
+     recurse: false
+     patterns: '*.crt'
+
+
+- name: Update /etc/ipa/nssdb with Certs
+  loop: "{{renamed_intermediate_files.files}}"
+  ansible.builtin.shell: "bash {{cert_workingdir_intermediates}}/update_etcipa_nssdb.bash /etc/ipa/nssdb {{item.path}}"
+  register: import_cmd
+

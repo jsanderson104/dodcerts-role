@@ -1,0 +1,20 @@
+---
+# Update DOD certs into NSSDB located at /etc/pki/nssdb
+
+
+- name: Find renamed intermediate cert files and put them in a list
+  register: renamed_intermediate_files
+  ansible.builtin.find:
+     paths: "{{cert_workingdir_intermediates}}"
+     recurse: false
+     patterns: '*.crt'
+
+- name: Copy Certutil import script for /etc/pki/nssdb to host
+  ansible.builtin.copy:
+    src: update_etcpki_nssdb.bash
+    dest: "{{cert_workingdir_intermediates}}"
+
+- name: Update /etc/pki/nssdb with Certs
+  loop: "{{renamed_intermediate_files.files}}"
+  ansible.builtin.shell: "bash {{cert_workingdir_intermediates}}/update_etcpki_nssdb.bash /etc/pki/nssdb {{item.path}}"
+  register: import_cmd

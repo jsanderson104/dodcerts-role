@@ -1,6 +1,21 @@
 ---
-# tasks file for dodcert-role
-#
-- name: Import tasks
+ 
+# This first import tasks is the meat of the Ansible role and the remaining import tasks are expecting this to have completed.
+- name: Import tasks to download, extract, and rename files.
   ansible.builtin.import_tasks:
     file: certs.yml
+
+- name: Import tasks to update IPA NSSDB
+  when: update_ipa_nssdb == true
+  ansible.builtin.import_tasks:
+    file: update_ipa_nssdb.yml
+
+- name: Import tasks to update system-wide PKI NSSDB
+  when: update_pki_nssdb == true
+  ansible.builtin.import_tasks:
+    file: update_pki_nssdb.yml
+
+- name: Import tasks to update SSSD sss_db_*.pem
+  when: update_sss_dbpem == true
+  ansible.builtin.import_tasks:
+    file: update_sss_dbpem.yml

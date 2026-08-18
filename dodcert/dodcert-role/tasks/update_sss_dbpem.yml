@@ -1,0 +1,4 @@
+---
+- name: Update SSSD Cert DB sssd_auth_ca_db.pem
+  ansible.builtin.shell:  echo "Not implemented yet..."
+
