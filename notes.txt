@@ -1,0 +1,3 @@
+1. Need to implement correct sss db pem file
+2. Do I need to do anything to /var/lib/ipa-client CRT files in that dir
+3. STIG will prevent the scripts from running out of /tmp/dodcert/  due to fstab noexec option
